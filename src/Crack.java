@@ -3,7 +3,7 @@ import org.apache.commons.codec.digest.Crypt;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +20,26 @@ public class Crack {
     }
 
     public void crack() throws FileNotFoundException {
-    }
+            try {
+                FileInputStream fis = new FileInputStream(this.dictionary);
+                Scanner scanner = new Scanner(fis);
+                while (scanner.hasNextLine()) {
+                    String word = scanner.nextLine();
+                    for (User user : users) {
+                        if (user.getPassHash().contains("$")) {
+                            String hash = Crypt.crypt(word, user.getPassHash());
+                            if (hash.equals(user.getPassHash())) {
+                                System.out.println("Found password " + word + " for user " + user.getUsername() + ".");
+                            }
+                        }
+                    }
+                }
+                scanner.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
 
     public static int getLineCount(String path) {
         int lineCount = 0;
@@ -30,8 +49,25 @@ public class Crack {
         return lineCount;
     }
 
-    public static User[] parseShadow(String shadowFile) throws FileNotFoundException {
+    public static User[] parseShadow(String shadowFile) {
+        User[] users = new User[getLineCount(shadowFile)];
+        try {
+            FileInputStream is = new FileInputStream("resources/shadow");
+            Scanner scanner = new Scanner(is);
+            int i = 0;
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                String[] parts = line.split(":");
+                users[i] = new User(parts[0], parts[1]);
+                i++;
+            }
+            scanner.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return users;
     }
+
 
     public static void main(String[] args) throws FileNotFoundException {
         Scanner sc = new Scanner(System.in);
